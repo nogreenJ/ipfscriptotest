@@ -32,7 +32,33 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
+}
+
+.largefield {
+  padding: 20px;
+  width: 50%;
+  height: 200px
+}
+
+.lg-txt {
+  height: 100%;
+  width: 100%;
+}
+
+.middleField {
+  padding: 20px 0 0 0;
+  width: 20%;
+  text-align: center;
+}
+
+.container {
+  display: flex;
+}
+
+.child {
+  flex: 1;
 }
