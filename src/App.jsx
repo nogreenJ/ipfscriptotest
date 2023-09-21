@@ -21,13 +21,13 @@ function App() {
     let data = '';
     switch (alg) {
       case "1":
-        data = CryptoJS.HmacSHA1(val, key);
+        data = CryptoJS.AES.encrypt(val, key).toString();
         break;
       case "2":
-        data = CryptoJS.HmacSHA256(val, key);
+        data = CryptoJS.HmacSHA256(val, key).toString();
         break;
       case "3":
-        data = CryptoJS.HmacMD5(val, key);
+        data = CryptoJS.HmacMD5(val, key).toString();
         break;
     }
     //create blob with data, then insert
@@ -60,16 +60,11 @@ function App() {
           alert('Não encontrado');
         }
         let data = response;
-        switch (alg) {
-          case "1":
-            data = CryptoJS.SHA1.decrypt(response, key);
-            break;
-          case "2":
-            data = CryptoJS.SHA256.decrypt(response, key);
-            break;
-          case "3":
-            data = CryptoJS.MD5.decrypt(response, key);
-            break;
+        if(alg == "1" && key){
+          data = CryptoJS.AES.decrypt(response, key);
+          data = data.toString(CryptoJS.enc.Utf8);
+          if(!data)
+            alert('Chave incorreta!');
         }
         $("#getVal").val(data)
       }
@@ -84,7 +79,7 @@ function App() {
         <div class="largefield child">
           <select id="insertCripto" style={{ margin: 2 }}>
             <option value="0">Algoritmo</option>
-            <option value="1">SHA-1</option>
+            <option value="1">AES</option>
             <option value="2">SHA-256</option>
             <option value="3">MD5</option>
           </select>
@@ -101,7 +96,7 @@ function App() {
           <br />
           <select id="getCripto" style={{ margin: 2 }}>
             <option value="0">Algoritmo</option>
-            <option value="1">SHA-1</option>
+            <option value="1">AES</option>
             <option value="2">SHA-256</option>
             <option value="3">MD5</option>
           </select>
