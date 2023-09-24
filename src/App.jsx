@@ -1,15 +1,14 @@
-import { useState } from "react";
 import './App.css';
-import { NFTStorage, Blob } from 'nft.storage'
+import { createHelia } from 'helia'
+import { strings } from '@helia/strings'
 import $ from 'jquery';
+import { CID } from 'multiformats/cid';
+
+const helia = await createHelia();
+const s = strings(helia);
+var CryptoJS = require("crypto-js");
 
 function App() {
-  var CryptoJS = require("crypto-js");
-
-  const NFT_STORAGE_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDA5NUY4QjRhYmRCNWUwODQ3YzVjMzMwMTA3NTYxZTNCMmFDZEQzRjIiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY5NTEyNzkxMzk0MywibmFtZSI6ImlwZnNjcmlwdG90ZXN0In0.5C9OzSwrXryNbFh2temNfjkAjqcrma93dNMZMt8jwro'
-  const client = new NFTStorage({ token: NFT_STORAGE_TOKEN })
-
-  const [retornoAPI, setRetornoAPI] = useState("");
 
   const save = async () => {
     $("#insertHash").val('');
@@ -29,13 +28,13 @@ function App() {
       case "3":
         data = CryptoJS.HmacMD5(val, key).toString();
         break;
+      default: data = val;
     }
-    //create blob with data, then insert
     if (data) {
-      const someData = new Blob([data])
-      const cid = await client.storeBlob(someData);
-      //put hash of file on insertHash
-      $("#insertHash").val(cid);
+      await s.add(data)
+        .then((res) => {
+          $("#insertHash").val(res);
+        });
     } else {
       alert('Erro, um ou mais campos não informados');
     }
@@ -43,32 +42,24 @@ function App() {
 
   const buscar = async () => {
     $("#getVal").val('');
-    //get hash from getHash, and fetch
-    //getCripto algorithm + getChave key decrypt
     const hash = $("#getHash").val();
     const alg = $("#getCripto").val();
     const key = $("#getChave").val();
     if (!hash) {
-      alert('Erro, um ou mais campos não informados');
+      alert('Erro, informe o CID');
       return;
     }
-    //set result to getVal
-    $.get(
-      'https://' + hash + '.ipfs.nftstorage.link/',
-      (response) => {
-        if (!response) {
-          alert('Não encontrado');
-        }
-        let data = response;
-        if(alg == "1" && key){
-          data = CryptoJS.AES.decrypt(response, key);
-          data = data.toString(CryptoJS.enc.Utf8);
-          if(!data)
+    await s.get(CID.parse(hash))
+      .then((res) => {
+        if (alg === "1" && key) {
+          res = CryptoJS.AES.decrypt(res, key);
+          res = res.toString(CryptoJS.enc.Utf8);
+          if (!res)
             alert('Chave incorreta!');
         }
-        $("#getVal").val(data)
-      }
-    );
+        $("#getVal").val(res);
+      });
+
   }
 
   return (
@@ -95,10 +86,8 @@ function App() {
           <input id="getHash" style={{ width: 500, margin: 2 }} type="text" placeholder="Hash"></input>
           <br />
           <select id="getCripto" style={{ margin: 2 }}>
-            <option value="0">Algoritmo</option>
+            <option value="0">Criptografia</option>
             <option value="1">AES</option>
-            <option value="2">SHA-256</option>
-            <option value="3">MD5</option>
           </select>
           <input id="getChave" type="text" placeholder="Chave"></input>
           <button style={{ margin: 2 }} onClick={() => buscar()}>Buscar</button>
