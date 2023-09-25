@@ -54,8 +54,10 @@ function App() {
         if (alg === "1" && key) {
           res = CryptoJS.AES.decrypt(res, key);
           res = res.toString(CryptoJS.enc.Utf8);
-          if (!res)
+          if (!res) {
             alert('Chave incorreta!');
+            return;
+          }
         }
         $("#getVal").val(res);
       });
