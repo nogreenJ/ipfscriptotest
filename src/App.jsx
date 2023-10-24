@@ -3,6 +3,8 @@ import { createHelia } from 'helia'
 import { strings } from '@helia/strings'
 import $ from 'jquery';
 import { CID } from 'multiformats/cid';
+import { useState } from "react";
+import { NFTStorage, Blob } from 'nft.storage'
 
 const helia = await createHelia();
 const s = strings(helia);
@@ -10,10 +12,16 @@ var CryptoJS = require("crypto-js");
 
 function App() {
 
+  const NFT_STORAGE_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDA5NUY4QjRhYmRCNWUwODQ3YzVjMzMwMTA3NTYxZTNCMmFDZEQzRjIiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY5NTEyNzkxMzk0MywibmFtZSI6ImlwZnNjcmlwdG90ZXN0In0.5C9OzSwrXryNbFh2temNfjkAjqcrma93dNMZMt8jwro'
+  const client = new NFTStorage({ token: NFT_STORAGE_TOKEN })
+
+  const [hashIn, setHashIn] = useState("");
+
   const save = async () => {
     $("#insertHash").val('');
     //select algorithim from insertCripto
     const alg = $("#insertCripto").val();
+    const gate = $("#insertGateway").val();
     const key = $("#insertChave").val();
     //encrypt value of insertVal using algorithm + insertChave
     const val = $("#insertVal").val();
@@ -31,10 +39,30 @@ function App() {
       default: data = val;
     }
     if (data) {
-      await s.add(data)
+      let cid = "";
+      switch (gate) {
+        //NFT.storage
+        case "1":
+          const someData = new Blob([data])
+          cid = await client.storeBlob(someData);
+          break;
+        //AWS gateway
+        case "2":
+          alert("Not implemented")
+          break;
+        //Other
+        case "3":
+          alert("Not implemented")
+          break;
+        default:
+          alert("No gateway")
+          break;
+      }
+      $("#insertHash").val(cid);
+      /*await s.add(data)
         .then((res) => {
           $("#insertHash").val(res);
-        });
+        });*/
     } else {
       alert('Erro, um ou mais campos não informados');
     }
@@ -75,6 +103,12 @@ function App() {
             <option value="1">AES</option>
             <option value="2">SHA-256</option>
             <option value="3">MD5</option>
+          </select>
+          <select id="insertGateway" style={{ margin: 2 }}>
+            <option value="0">Gateway</option>
+            <option value="1">NFT.Storage</option>
+            <option value="2">AWS Gateway</option>
+            <option value="3">Pinata</option>
           </select>
           <input id="insertChave" type="text" placeholder="Chave"></input>
           <button style={{ margin: 2 }} onClick={() => save()}>Inserir</button>
