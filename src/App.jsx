@@ -1,13 +1,18 @@
 import './App.css';
 import { createHelia } from 'helia'
 import { strings } from '@helia/strings'
+import { unixfs } from '@helia/unixfs'
 import $ from 'jquery';
 import { CID } from 'multiformats/cid';
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { NFTStorage, Blob } from 'nft.storage'
+import { useDropzone } from 'react-dropzone'
+import Dropzone from 'react-dropzone'
 
 const helia = await createHelia();
 const s = strings(helia);
+const fs = unixfs(helia);
+const encoder = new TextEncoder()
 var CryptoJS = require("crypto-js");
 
 function App() {
@@ -16,6 +21,27 @@ function App() {
   const client = new NFTStorage({ token: NFT_STORAGE_TOKEN })
 
   const [hashIn, setHashIn] = useState("");
+  const [activeFile, setActiveFile] = useState({ nome: '', binary: '' });
+
+
+  const onDrop = useCallback(acceptedFiles => {
+    acceptedFiles.forEach((file) => {
+      const reader = new FileReader()
+
+      reader.onabort = () => console.log('file reading was aborted')
+      reader.onerror = () => console.log('file reading has failed')
+      reader.onload = () => {
+        // Do whatever you want with the file contents
+        const binaryStr = reader.result
+        console.log(binaryStr)
+        setActiveFile({ nome: file.name, binary: binaryStr });
+        console.log(activeFile)
+      }
+      reader.readAsArrayBuffer(file)
+    })
+  }, [])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop })
 
   const save = async () => {
     $("#insertHash").val('');
@@ -24,7 +50,12 @@ function App() {
     const gate = $("#insertGateway").val();
     const key = $("#insertChave").val();
     //encrypt value of insertVal using algorithm + insertChave
-    const val = $("#insertVal").val();
+    const val = activeFile.binary;
+    if (!activeFile.binary) {
+      alert('Insira um arquivo!')
+      return;
+    }
+    setActiveFile({ nome: '', binary: '' });
     let data = '';
     switch (alg) {
       case "1":
@@ -77,7 +108,14 @@ function App() {
       alert('Erro, informe o CID');
       return;
     }
-    await s.get(CID.parse(hash))
+    let resp = '';
+    for await (const chunk of fs.cat(CID.parse(hash))) {
+      resp += /*decoder.decode(*/chunk/*, {
+        stream: true
+      })*/
+    }
+    $("#getVal").val(resp);
+    /*await fs.get(CID.parse(hash))
       .then((res) => {
         if (alg === "1" && key) {
           res = CryptoJS.AES.decrypt(res, key);
@@ -88,7 +126,7 @@ function App() {
           }
         }
         $("#getVal").val(res);
-      });
+      }).catch(e => console.log(e));*/
 
   }
 
@@ -115,7 +153,16 @@ function App() {
           <br />
           <input id="insertHash" style={{ width: 500, margin: 2 }} type="text" readOnly={true} placeholder="Hash"></input>
           <br />
-          <textarea id="insertVal" rows="30" cols="50" ></textarea>
+
+          <div {...getRootProps()}>
+            <input class="dropFiles" {...getInputProps()} />
+            {
+              activeFile.nome ? activeFile.nome :
+                isDragActive ?
+                  <p>Soltar arquivos...</p> :
+                  <p>Insira os arquivos aqui</p>
+            }
+          </div>
         </div>
 
         <div class="largefield child">
